@@ -70,8 +70,10 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      // VPS: Postgres do próprio servidor. Netlify (teste): Netlify DB preenche NETLIFY_DATABASE_URL.
-      connectionString: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL || '',
+      // VPS: Postgres do próprio servidor. Netlify (teste): o Netlify Database injeta
+      // NETLIFY_DB_URL (nome atual) ou NETLIFY_DATABASE_URL (nome antigo) sozinho.
+      connectionString:
+        process.env.DATABASE_URL || process.env.NETLIFY_DB_URL || process.env.NETLIFY_DATABASE_URL || '',
       // Funções serverless abrem muitas instâncias; poucas conexões por instância evitam esgotar o banco.
       max: process.env.NETLIFY ? 2 : 10,
     },

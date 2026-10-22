@@ -2,8 +2,9 @@
  * Popula o banco com o conteúdo inicial do site.
  * Uso: pnpm seed
  *
- * Só cria o que ainda não existe, então pode rodar mais de uma vez sem duplicar.
- * O primeiro administrador usa SEED_ADMIN_EMAIL / SEED_ADMIN_SENHA do .env.
+ * Roda no build do Netlify (pnpm run ci) e só preenche um banco novo: se o banco já tem
+ * os dados da igreja, sai sem alterar nada.
+ * O primeiro administrador usa SEED_ADMIN_EMAIL / SEED_ADMIN_SENHA (variáveis de ambiente).
  */
 import config from '@payload-config'
 import { getPayload } from 'payload'
@@ -48,9 +49,16 @@ if (totalUsuarios === 0 && email && senha) {
   log('nenhum usuário: crie o primeiro acessando /admin (ou defina SEED_ADMIN_EMAIL e SEED_ADMIN_SENHA)')
 }
 
-// --- Dados da igreja ---
+// O seed roda em todo deploy do Netlify. Se o banco já foi preparado uma vez, não mexe em nada:
+// assim, apagar os eventos ou ministérios de exemplo no painel não faz eles voltarem.
 const atual = await payload.findGlobal({ slug: 'configuracoes' })
-if (!atual.endereco) {
+if (atual.endereco) {
+  log('banco já preparado anteriormente: nada a fazer')
+  process.exit(0)
+}
+
+// --- Dados da igreja ---
+{
   await payload.updateGlobal({
     slug: 'configuracoes',
     data: {

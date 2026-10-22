@@ -59,14 +59,11 @@ Faça commit do arquivo gerado em `src/migrations`. O Netlify (`pnpm run ci`) e 
 ## Teste: Netlify
 
 1. Importe o repositório do GitHub no Netlify (o `netlify.toml` já define o build).
-2. Em **Extensions**, adicione o **Netlify DB**. Ele cria o Postgres e a variável `NETLIFY_DATABASE_URL`. Reivindique (claim) o banco na Neon para ele não expirar.
+2. Em **Data & storage → Database**, crie o banco. O Netlify injeta a conexão (`NETLIFY_DB_URL`) no build e nas funções; ela não aparece na lista de variáveis.
 3. Variáveis: `PAYLOAD_SECRET`, `UPLOADTHING_TOKEN`, `NEXT_PUBLIC_SITE_URL` e, opcionalmente, `YOUTUBE_CHANNEL_ID`.
-4. Popular o banco (no seu computador, com a URL do Netlify DB):
+4. Para criar o primeiro administrador, defina também `SEED_ADMIN_EMAIL` e `SEED_ADMIN_SENHA` e faça um deploy.
 
-```bash
-DATABASE_URL=postgres://... pnpm payload migrate
-DATABASE_URL=postgres://... SEED_ADMIN_EMAIL=voce@email.com SEED_ADMIN_SENHA=... pnpm seed
-```
+O build (`pnpm run ci`) aplica as migrações e roda o seed, que só preenche um banco vazio. Cada branch ou pull request ganha uma cópia do banco e passa pelo mesmo processo.
 
 ## Produção: VPS Locaweb
 
