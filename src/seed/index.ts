@@ -97,9 +97,9 @@ if (!inicio.hero?.titulo) {
     slug: 'pagina-inicial',
     data: {
       hero: {
-        titulo: 'Uma igreja para chamar de casa',
+        titulo: 'Uma Igreja acolhedora e comprometida com a Palavra.',
         subtitulo:
-          'Somos uma família que se reúne em Vila Pereira Barreto para adorar a Deus, crescer na Palavra e cuidar uns dos outros. Venha como você está.',
+          'Somos uma comunidade em Vila Pereira Barreto que se reúne em torno da fiel exposição da Palavra de Deus, para adorar a Cristo, formar nossos filhos na fé e caminhar juntos. Aqui há lugar para você.',
       },
       quemSomos: {
         titulo: 'Uma comunidade acolhedora, firmada na Palavra',

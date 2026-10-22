@@ -67,7 +67,7 @@ export default async function Inicio() {
           />
         )}
         <div className="container hero__conteudo">
-          <h1>{hero?.titulo || 'Uma igreja para chamar de casa'}</h1>
+          <h1>{hero?.titulo || 'Uma Igreja acolhedora e comprometida com a Palavra.'}</h1>
           {hero?.subtitulo && <p>{hero.subtitulo}</p>}
           <div className="botoes">
             <Link href="/primeira-visita" className="botao botao--destaque botao--grande">
