@@ -17,7 +17,8 @@ const nunito = Nunito_Sans({ subsets: ['latin'], weight: ['400', '600', '700'], 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  // No Netlify, URL é preenchida sozinha com o endereço principal do projeto.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.URL || 'http://localhost:3000'),
   title: {
     default: 'Igreja Presbiteriana de Vila Bonilha',
     template: '%s · IPVB',
