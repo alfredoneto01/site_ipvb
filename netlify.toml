@@ -1,0 +1,8 @@
+# Deploy no Netlify. O runtime de Next.js do Netlify é detectado automaticamente.
+[build]
+  # Aplica as migrações do banco (Turso) antes de gerar o site.
+  command = "pnpm run ci"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
