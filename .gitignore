@@ -52,3 +52,6 @@ node_modules/
 # banco local
 *.db
 *.db-journal
+
+# variáveis de produção do VPS
+.env.production

@@ -22,6 +22,9 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
+    // No VPS, aponte MEDIA_DIR para uma pasta fora do código (ex.: /var/www/ipvb/media)
+    // para as fotos sobreviverem às atualizações do site.
+    staticDir: process.env.MEDIA_DIR || 'media',
     mimeTypes: ['image/*'],
     imageSizes: [
       { name: 'card', width: 800, height: 600, position: 'centre' },

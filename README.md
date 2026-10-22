@@ -1,13 +1,19 @@
 # Site IPVB
 
-Site institucional da Igreja Presbiteriana de Vila Bonilha. Next.js 16 + Payload CMS 3 (painel administrativo em `/admin`).
+Site institucional da Igreja Presbiteriana de Vila Bonilha. Next.js 16 + Payload CMS 3 (painel administrativo em `/admin`) + PostgreSQL.
+
+| Ambiente | Onde | Banco | Fotos |
+|---|---|---|---|
+| Teste | Netlify | Netlify DB (Postgres/Neon) | Uploadthing |
+| Produção | VPS Locaweb | Postgres no próprio VPS | Disco do VPS (`MEDIA_DIR`) |
 
 ## Rodando localmente
 
+Não há banco local: o desenvolvimento usa o banco de teste.
+
 ```bash
 pnpm install
-cp .env.example .env   # gere um PAYLOAD_SECRET longo
-pnpm seed              # cria o banco SQLite e o conteúdo inicial
+cp .env.example .env   # cole a URL do banco de teste em DATABASE_URL
 pnpm dev               # http://localhost:3000
 ```
 
@@ -22,7 +28,9 @@ No primeiro acesso a `/admin`, o Payload pede para criar um usuário. Esse prime
 | `src/collections` | Agenda, avisos, ministérios, liderança, imagens, formulários e usuários |
 | `src/globals` | Página inicial, Quem somos, Primeira visita e Dados da igreja |
 | `src/access/roles.ts` | Papéis: administrador, pastor, secretaria, mídia |
+| `src/migrations` | Migrações do banco (Postgres) |
 | `src/seed` | Conteúdo inicial (`pnpm seed`, não duplica se rodar de novo) |
+| `deploy/` | PM2, Nginx, script de atualização e backup do VPS |
 
 ## Papéis do painel
 
@@ -38,26 +46,79 @@ Pedidos de oração só aparecem para pastores e administradores.
 - **Mensagens**: defina `YOUTUBE_CHANNEL_ID` (o ID que começa com `UC…`). Os vídeos vêm do feed público do canal, sem chave de API, e são atualizados a cada hora.
 - **Páginas**: são estáticas e se regeneram ao salvar qualquer coisa no painel (e a cada hora, para tirar eventos que já passaram).
 
-## Deploy (Netlify)
+## Migrações do banco
 
-- **Hospedagem**: Netlify, conectado ao repositório do GitHub (cada push na branch principal publica). Configuração em `netlify.toml`.
-- **Banco**: Turso. `DATABASE_URL` = `libsql://…` e `DATABASE_AUTH_TOKEN`.
-- **Fotos**: Uploadthing (`UPLOADTHING_TOKEN`). O envio vai direto do navegador, sem o limite de 6 MB das funções.
-- **Variáveis no Netlify**: `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `PAYLOAD_SECRET`, `UPLOADTHING_TOKEN`, `YOUTUBE_CHANNEL_ID`, `NEXT_PUBLIC_SITE_URL`.
-
-### Migrações do banco
-
-Em desenvolvimento o Payload ajusta o banco local sozinho. Em produção, as mudanças de esquema vão por migração:
+O esquema do banco nunca muda sozinho. Depois de alterar coleções ou globais:
 
 ```bash
-pnpm payload migrate:create nome-da-mudanca   # depois de alterar coleções/globais
+pnpm payload migrate:create nome-da-mudanca
 ```
 
-O build do Netlify (`pnpm run ci`) roda `payload migrate` antes do `next build`.
+Faça commit do arquivo gerado em `src/migrations`. O Netlify (`pnpm run ci`) e o script do VPS rodam `payload migrate` antes do build.
 
-Para popular o banco de produção pela primeira vez, rode localmente apontando para o Turso:
+## Teste: Netlify
+
+1. Importe o repositório do GitHub no Netlify (o `netlify.toml` já define o build).
+2. Em **Extensions**, adicione o **Netlify DB**. Ele cria o Postgres e a variável `NETLIFY_DATABASE_URL`. Reivindique (claim) o banco na Neon para ele não expirar.
+3. Variáveis: `PAYLOAD_SECRET`, `UPLOADTHING_TOKEN`, `NEXT_PUBLIC_SITE_URL` e, opcionalmente, `YOUTUBE_CHANNEL_ID`.
+4. Popular o banco (no seu computador, com a URL do Netlify DB):
 
 ```bash
-DATABASE_URL=libsql://... DATABASE_AUTH_TOKEN=... pnpm payload migrate
-DATABASE_URL=libsql://... DATABASE_AUTH_TOKEN=... pnpm seed
+DATABASE_URL=postgres://... pnpm payload migrate
+DATABASE_URL=postgres://... SEED_ADMIN_EMAIL=voce@email.com SEED_ADMIN_SENHA=... pnpm seed
 ```
+
+## Produção: VPS Locaweb
+
+Feito uma vez, como root, num VPS Ubuntu/Debian:
+
+```bash
+# Node 22, pnpm, PM2, Nginx, Postgres e certbot
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs nginx postgresql certbot python3-certbot-nginx git
+corepack enable && npm install -g pm2
+
+# Usuário do sistema que roda o site
+adduser --disabled-password --gecos "" ipvb
+
+# Banco e usuário do Postgres (troque a senha)
+sudo -u postgres psql -c "CREATE USER ipvb WITH PASSWORD 'SENHA_FORTE';"
+sudo -u postgres psql -c "CREATE DATABASE ipvb OWNER ipvb;"
+
+# Pastas do site, das fotos e dos backups
+mkdir -p /var/www/ipvb /var/www/ipvb-media /var/backups/ipvb
+chown ipvb:ipvb /var/www/ipvb /var/www/ipvb-media /var/backups/ipvb
+
+# Nginx + HTTPS (depois de apontar o DNS do domínio para o IP do VPS)
+cp /var/www/ipvb/deploy/nginx-ipvb.conf /etc/nginx/sites-available/ipvb
+ln -s /etc/nginx/sites-available/ipvb /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+certbot --nginx -d ipvb.org.br -d www.ipvb.org.br
+
+# PM2 sobe junto com o servidor
+pm2 startup systemd -u ipvb --hp /home/ipvb
+```
+
+Como usuário `ipvb`:
+
+```bash
+git clone <url-do-repositorio> /var/www/ipvb
+cd /var/www/ipvb
+cp .env.example .env.production   # preencha DATABASE_URL, PAYLOAD_SECRET, MEDIA_DIR...
+./deploy/atualizar.sh             # instala, migra, gera e sobe o site
+crontab -e                        # backup diário: veja deploy/backup-banco.sh
+```
+
+Para publicar uma nova versão: `./deploy/atualizar.sh`.
+
+### Migrar os dados do Netlify para o VPS
+
+```bash
+pg_dump --format=custom --no-owner "URL_DO_NETLIFY_DB" > ipvb.dump
+pg_restore --no-owner --clean --if-exists -d "postgres://ipvb:SENHA@127.0.0.1:5432/ipvb" ipvb.dump
+```
+
+**Fotos enviadas durante o teste** ficam no Uploadthing. Duas opções:
+
+- Manter `UPLOADTHING_TOKEN` também no `.env.production` do VPS: tudo continua no Uploadthing (mais simples).
+- Deixar o token vazio no VPS: as fotos passam a ficar em `MEDIA_DIR`, e as que foram enviadas no teste precisam ser reenviadas pelo painel.

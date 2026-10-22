@@ -1,4 +1,4 @@
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
 import { pt } from '@payloadcms/translations/languages/pt'
@@ -68,11 +68,15 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteAdapter({
-    client: {
-      url: process.env.DATABASE_URL || '',
-      authToken: process.env.DATABASE_AUTH_TOKEN,
+  db: postgresAdapter({
+    pool: {
+      // VPS: Postgres do próprio servidor. Netlify (teste): Netlify DB preenche NETLIFY_DATABASE_URL.
+      connectionString: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL || '',
+      // Funções serverless abrem muitas instâncias; poucas conexões por instância evitam esgotar o banco.
+      max: process.env.NETLIFY ? 2 : 10,
     },
+    // O esquema muda só por migração (pnpm payload migrate), nunca automaticamente.
+    push: false,
     migrationDir: path.resolve(dirname, 'migrations'),
   }),
   sharp,
