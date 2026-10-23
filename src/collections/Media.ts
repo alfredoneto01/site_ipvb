@@ -5,7 +5,10 @@ import { logado, publico } from '../access/roles'
 export const Media: CollectionConfig = {
   slug: 'media',
   labels: { singular: 'Imagem', plural: 'Imagens' },
-  admin: { group: 'Conteúdo' },
+  admin: {
+    group: 'Conteúdo',
+    description: 'Envie fotos de até 5 MB (JPG ou WebP). O site gera versões menores automaticamente.',
+  },
   access: {
     read: publico,
     create: logado,

@@ -88,8 +88,8 @@ export default buildConfig({
     uploadthingStorage({
       enabled: Boolean(process.env.UPLOADTHING_TOKEN),
       alwaysInsertFields: true,
-      // Envio direto do navegador, sem passar pelo limite de 6 MB das funções do Netlify.
-      clientUploads: true,
+      // O envio passa pelo servidor. O modo clientUploads (direto do navegador) falhava ao
+      // salvar fotos recortadas no Netlify; o custo é o limite de ~6 MB por foto lá.
       collections: { media: true },
       options: { token: process.env.UPLOADTHING_TOKEN, acl: 'public-read' },
     }),
