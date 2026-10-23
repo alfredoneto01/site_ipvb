@@ -51,8 +51,10 @@ Pedidos de oração só aparecem para pastores e administradores.
 O esquema do banco nunca muda sozinho. Depois de alterar coleções ou globais:
 
 ```bash
-pnpm payload migrate:create nome-da-mudanca
+pnpm migrate:create nome-da-mudanca
 ```
+
+Use sempre esse script, e não `payload migrate:create` direto: ele liga o plugin do Uploadthing (com um token falso) para que a migração inclua as colunas do plugin. Sem isso, a migração pode remover colunas de que a produção precisa.
 
 Faça commit do arquivo gerado em `src/migrations`. O Netlify (`pnpm run ci`) e o script do VPS rodam `payload migrate` antes do build.
 

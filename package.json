@@ -14,6 +14,7 @@
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation UPLOADTHING_TOKEN=eyJhcGlLZXkiOiJza19lc3F1ZW1hIiwiYXBwSWQiOiJlc3F1ZW1hIiwicmVnaW9ucyI6WyJzZWExIl19 payload migrate:create",
     "seed": "cross-env NODE_OPTIONS=--no-deprecation payload run src/seed/index.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
   },
