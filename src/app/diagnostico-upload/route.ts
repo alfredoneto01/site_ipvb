@@ -31,5 +31,33 @@ export async function GET() {
     resultado.uploadthing = { ok: false, erro: mensagem(e) }
   }
 
+  // Fluxo completo do Payload: envio ao Uploadthing, versões com sharp e gravação no banco.
+  try {
+    const { getPayload } = await import('payload')
+    const config = (await import('@payload-config')).default
+    const payload = await getPayload({ config })
+    const sharp = (await import('sharp')).default
+    const imagem = await sharp({ create: { width: 1000, height: 700, channels: 3, background: '#f08a30' } })
+      .jpeg()
+      .toBuffer()
+    const doc = await payload.create({
+      collection: 'media',
+      data: { alt: 'diagnóstico (apagar)' },
+      file: { data: imagem, mimetype: 'image/jpeg', name: `diagnostico-${Date.now()}.jpg`, size: imagem.length },
+    })
+    resultado.criacao = { ok: true, id: doc.id, url: doc.url, card: doc.sizes?.card?.url }
+    await payload.delete({ collection: 'media', id: doc.id })
+    resultado.limpeza = 'imagem de teste apagada'
+  } catch (e) {
+    const err = e as Error & { cause?: unknown; data?: unknown }
+    resultado.criacao = {
+      ok: false,
+      erro: mensagem(e),
+      causa: err.cause ? mensagem(err.cause) : undefined,
+      dados: err.data,
+      pilha: err.stack?.split('\n').slice(0, 8),
+    }
+  }
+
   return Response.json(resultado)
 }
